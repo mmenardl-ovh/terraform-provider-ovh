@@ -56,3 +56,35 @@ type DedicatedCloudOs struct {
 	LastModificationDate *string `json:"lastModificationDate"`
 	ShortName            *string `json:"shortName"`
 }
+
+type DedicatedCloudAllowedNetwork struct {
+	Description     *string `json:"description"`
+	Network         *string `json:"network"`
+	NetworkAccessId *int    `json:"networkAccessId"`
+	State           *string `json:"state"`
+}
+
+type DedicatedCloudTask struct {
+	CreatedBy            *string `json:"createdBy"`
+	CreatedFrom          *string `json:"createdFrom"`
+	DatacenterId         *int    `json:"datacenterId"`
+	Description          *string `json:"description"`
+	EndDate              *string `json:"endDate"`
+	ExecutionDate        *string `json:"executionDate"`
+	FilerId              *int    `json:"filerId"`
+	HostId               *int    `json:"hostId"`
+	LastModificationDate *string `json:"lastModificationDate"`
+	MaintenanceDateFrom  *string `json:"maintenanceDateFrom"`
+	MaintenanceDateTo    *string `json:"maintenanceDateTo"`
+	Name                 *string `json:"name"`
+	Network              *string `json:"network"`
+	NetworkAccessId      *int    `json:"networkAccessId"`
+	OrderId              *int    `json:"orderId"`
+	ParentTaskId         *int    `json:"parentTaskId"`
+	Progress             *int    `json:"progress"`
+	State                *string `json:"state"`
+	TaskId               *int    `json:"taskId"`
+	Type                 *string `json:"type"`
+	UserId               *int    `json:"userId"`
+	VlanId               *int    `json:"vlanId"`
+}
