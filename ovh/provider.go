@@ -100,6 +100,7 @@ func Provider() *schema.Provider {
 			"ovh_dedicatedcloud_allowednetwork":                       dataSourceDedicatedCloudAllowedNetwork(),
 			"ovh_dedicatedcloud_allowednetwork_tasks":                 dataSourceDedicatedCloudAllowedNetworkTasks(),
 			"ovh_dedicatedcloud_allowednetwork_task":                  dataSourceDedicatedCloudAllowedNetworkTask(),
+			"ovh_dedicatedcloud_users":                                dataSourceDedicatedCloudUsers(),
 			"ovh_dedicated_installation_templates":                    dataSourceDedicatedInstallationTemplates(),
 			"ovh_dedicated_server":                                    dataSourceDedicatedServer(),
 			"ovh_dedicated_server_boots":                              dataSourceDedicatedServerBoots(),
