@@ -13,7 +13,7 @@ func dataSourceDedicatedCloudLocations() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceDedicatedCloudLocationsRead,
 		Schema: map[string]*schema.Schema{
-			"result": {
+			"locations": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
@@ -28,14 +28,17 @@ func dataSourceDedicatedCloudLocationsRead(d *schema.ResourceData, meta interfac
 	config := meta.(*Config)
 
 	result := make([]string, 0)
-	err := config.OVHClient.Get("/dedicatedCloud/location", &result)
+
+	endpoint := "/dedicatedCloud/location"
+
+	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud/location information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	sort.Strings(result)
 	d.SetId(hashcode.Strings(result))
-	d.Set("result", result)
+	d.Set("locations", result)
 
 	return nil
 }
@@ -68,13 +71,13 @@ func dataSourceDedicatedCloudLocationRead(d *schema.ResourceData, meta interface
 	config := meta.(*Config)
 	pccZone := d.Get("pcc_zone").(string)
 	location := &DedicatedCloudLocation{}
+	endpoint := fmt.Sprintf("/dedicatedCloud/location/%s", url.PathEscape(pccZone))
 	err := config.OVHClient.Get(
-		fmt.Sprintf("/dedicatedCloud/location/%s", url.PathEscape(pccZone)),
+		endpoint,
 		&location,
 	)
-
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud/location/{pccZone} information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	d.SetId(fmt.Sprintf("%d", *location.Id))
@@ -95,7 +98,7 @@ func dataSourceDedicatedCloudLocationHostProfiles() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"result": {
+			"host_profiles": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
@@ -110,14 +113,15 @@ func dataSourceDedicatedCloudLocationHostProfilesRead(d *schema.ResourceData, me
 	config := meta.(*Config)
 	pccZone := d.Get("pcc_zone").(string)
 	result := make([]string, 0)
-	err := config.OVHClient.Get(fmt.Sprintf("/dedicatedCloud/location/%s/hostProfile", pccZone), &result)
+	endpoint := fmt.Sprintf("/dedicatedCloud/location/%s/hostProfile", pccZone)
+	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud/location/{pccZone}/hostProfile information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	sort.Strings(result)
 	d.SetId(hashcode.Strings(result))
-	d.Set("result", result)
+	d.Set("host_profiles", result)
 
 	return nil
 }
@@ -133,7 +137,7 @@ func dataSourceDedicatedCloudLocationHypervisors() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"result": {
+			"hypervisors": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
@@ -148,14 +152,15 @@ func dataSourceDedicatedCloudLocationHypervisorsRead(d *schema.ResourceData, met
 	config := meta.(*Config)
 	pccZone := d.Get("pcc_zone").(string)
 	result := make([]string, 0)
-	err := config.OVHClient.Get(fmt.Sprintf("/dedicatedCloud/location/%s/hypervisor", pccZone), &result)
+	endpoint := fmt.Sprintf("/dedicatedCloud/location/%s/hypervisor", pccZone)
+	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud/location/{pccZone}/hypervisor information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	sort.Strings(result)
 	d.SetId(hashcode.Strings(result))
-	d.Set("result", result)
+	d.Set("hypervisors", result)
 
 	return nil
 }

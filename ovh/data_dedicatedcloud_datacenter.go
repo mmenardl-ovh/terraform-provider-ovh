@@ -2,10 +2,11 @@ package ovh
 
 import (
 	"fmt"
-	"math/rand"
 	"sort"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/ovh/terraform-provider-ovh/ovh/helpers/hashcode"
 )
 
 // Datacenters
@@ -41,7 +42,11 @@ func dataSourceDedicatedCloudDatacentersRead(d *schema.ResourceData, meta interf
 	}
 
 	sort.Ints(result)
-	d.SetId(fmt.Sprintf("%d", rand.Intn(1000000)))
+	var stringResults []string
+	for _, i := range result {
+		stringResults = append(stringResults, strconv.Itoa(i))
+	}
+	d.SetId(hashcode.Strings(stringResults))
 	d.Set("datacenters", result)
 
 	return nil
@@ -160,7 +165,11 @@ func dataSourceDedicatedCloudDatacenterTasksRead(d *schema.ResourceData, meta in
 	}
 
 	sort.Ints(result)
-	d.SetId(fmt.Sprintf("%d", rand.Intn(1000000)))
+	var stringResults []string
+	for _, i := range result {
+		stringResults = append(stringResults, strconv.Itoa(i))
+	}
+	d.SetId(hashcode.Strings(stringResults))
 	d.Set("tasks", result)
 
 	return nil
@@ -277,7 +286,7 @@ func dataSourceDedicatedCloudDatacenterTaskRead(d *schema.ResourceData, meta int
 		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
-	d.SetId(fmt.Sprintf("%d", *task.TaskId))
+	d.SetId(fmt.Sprintf("%s/%d/%d", d.Get("service_name"), d.Get("datacenter_id"), d.Get("task_id")))
 	d.Set("created_by", task.CreatedBy)
 	d.Set("created_from", task.CreatedFrom)
 	d.Set("datacenter_id", task.DatacenterId)
@@ -300,6 +309,324 @@ func dataSourceDedicatedCloudDatacenterTaskRead(d *schema.ResourceData, meta int
 	d.Set("type", task.Type)
 	d.Set("user_id", task.UserId)
 	d.Set("vlan_id", task.VlanId)
+
+	return nil
+}
+
+// Datacenter clusters
+
+func dataSourceDedicatedCloudDatacenterClusters() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceDedicatedCloudDatacenterClustersRead,
+		Schema: map[string]*schema.Schema{
+			"service_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"datacenter_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"clusters": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeInt,
+				},
+			},
+		},
+	}
+}
+
+func dataSourceDedicatedCloudDatacenterClustersRead(d *schema.ResourceData, meta interface{}) error {
+	config := meta.(*Config)
+	serviceName := d.Get("service_name").(string)
+	datacenterId := d.Get("datacenter_id").(int)
+	result := make([]int, 0)
+
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/datacenter/%d/cluster", serviceName, datacenterId)
+	err := config.OVHClient.Get(endpoint, &result)
+	if err != nil {
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
+	}
+
+	sort.Ints(result)
+	var stringResults []string
+	for _, i := range result {
+		stringResults = append(stringResults, strconv.Itoa(i))
+	}
+	d.SetId(hashcode.Strings(stringResults))
+	d.Set("clusters", result)
+
+	return nil
+}
+
+// Datacenter Cluster
+
+func dataSourceDedicatedCloudDatacenterCluster() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceDedicatedCloudDatacenterClusterRead,
+		Schema: map[string]*schema.Schema{
+			"service_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"datacenter_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"cluster_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"autoscale": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"drs_mode": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"drs_status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"evc_mode": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ha_status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vmware_cluster_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func dataSourceDedicatedCloudDatacenterClusterRead(d *schema.ResourceData, meta interface{}) error {
+	config := meta.(*Config)
+	serviceName := d.Get("service_name").(string)
+	datacenterId := d.Get("datacenter_id").(int)
+	clusterId := d.Get("cluster_id").(int)
+	cluster := &DedicatedCloudCluster{}
+
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/datacenter/%d/cluster/%d", serviceName, datacenterId, clusterId)
+	err := config.OVHClient.Get(endpoint, &cluster)
+	if err != nil {
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
+	}
+
+	d.SetId(fmt.Sprintf("%s/%d/%d", d.Get("service_name"), d.Get("datacenter_id"), d.Get("cluster_id")))
+	d.Set("drs_mode", *cluster.DrsMode)
+	d.Set("drs_status", *cluster.DrsStatus)
+	d.Set("evc_mode", *cluster.EvcMode)
+	d.Set("ha_status", *cluster.HaStatus)
+	d.Set("name", *cluster.Name)
+	d.Set("vmware_cluster_id", *cluster.VmwareClusterId)
+	if cluster.Autoscale != nil {
+		var autoscale = make(map[string]interface{})
+		autoscale["autoscale_in_host"] = *cluster.Autoscale.AutoScaleInHost
+		autoscale["autoscale_out_host"] = *cluster.Autoscale.AutoScaleOutHost
+		autoscale["autoscale_out_storage"] = *cluster.Autoscale.AutoScaleOutStorage
+		autoscale["config_id"] = strconv.Itoa(*cluster.Autoscale.ConfigId)
+		autoscale["id"] = strconv.Itoa(*cluster.Autoscale.Id)
+		autoscale["in_maintenance_mode"] = *cluster.Autoscale.InMaintenanceMode
+		autoscale["state"] = *cluster.Autoscale.State
+
+		d.Set("autoscale", autoscale)
+	}
+
+	return nil
+}
+
+// Datacenter Filers
+
+func dataSourceDedicatedCloudDatacenterFilers() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceDedicatedCloudDatacenterFilersRead,
+		Schema: map[string]*schema.Schema{
+			"service_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"datacenter_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"filers": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeInt,
+				},
+			},
+		},
+	}
+}
+
+func dataSourceDedicatedCloudDatacenterFilersRead(d *schema.ResourceData, meta interface{}) error {
+	config := meta.(*Config)
+	serviceName := d.Get("service_name").(string)
+	datacenterId := d.Get("datacenter_id").(int)
+	result := make([]int, 0)
+
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/datacenter/%d/filer", serviceName, datacenterId)
+	err := config.OVHClient.Get(endpoint, &result)
+	if err != nil {
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
+	}
+
+	sort.Ints(result)
+	var stringResults []string
+	for _, i := range result {
+		stringResults = append(stringResults, strconv.Itoa(i))
+	}
+	d.SetId(hashcode.Strings(stringResults))
+	d.Set("filers", result)
+
+	return nil
+}
+
+// Datacenter Filer
+
+func dataSourceDedicatedCloudDatacenterFiler() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceDedicatedCloudDatacenterFilerRead,
+		Schema: map[string]*schema.Schema{
+			"service_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"datacenter_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"filer_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"active_node": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"billing_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"connection_state": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"full_profile": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"is_managed_by_ovh": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"master": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"profile": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"resource_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"size": {
+				Type: schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Computed: true,
+			},
+			"slave": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"space_free": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"space_provisionned": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"space_used": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"state": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vm_total": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func dataSourceDedicatedCloudDatacenterFilerRead(d *schema.ResourceData, meta interface{}) error {
+	config := meta.(*Config)
+	serviceName := d.Get("service_name").(string)
+	datacenterId := d.Get("datacenter_id").(int)
+	filerId := d.Get("filer_id").(int)
+	filer := &DedicatedCloudFiler{}
+
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/datacenter/%d/filer/%d", serviceName, datacenterId, filerId)
+	err := config.OVHClient.Get(endpoint, &filer)
+	if err != nil {
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
+	}
+
+	d.SetId(fmt.Sprintf("%s/%d/%d", d.Get("service_name"), d.Get("datacenter_id"), d.Get("filer_id")))
+	d.Set("active_node", *filer.ActiveNode)
+	d.Set("billing_type", *filer.BillingType)
+	d.Set("connection_state", *filer.ConnectionState)
+	d.Set("filer_id", d.Get("filer_id"))
+	d.Set("full_profile", *filer.FullProfile)
+	d.Set("is_managed_by_ovh", *filer.IsManagedByOvh)
+	d.Set("master", *filer.Master)
+	d.Set("name", *filer.Name)
+	d.Set("profile", *filer.Profile)
+	if filer.ResourceName != nil {
+		d.Set("resource_name", *filer.ResourceName)
+	}
+	if filer.Size != nil {
+		var size = make(map[string]interface{})
+		size["unit"] = *filer.Size.Unit
+		size["value"] = strconv.Itoa(*filer.Size.Value)
+		d.Set("size", size)
+	}
+	if filer.Slave != nil {
+		d.Set("slave", *filer.Slave)
+	}
+	d.Set("space_free", *filer.SpaceFree)
+	d.Set("space_provisionned", *filer.SpaceProvisionned)
+	d.Set("space_used", *filer.SpaceUsed)
+	d.Set("state", *filer.State)
+	d.Set("vm_total", *filer.VmTotal)
 
 	return nil
 }

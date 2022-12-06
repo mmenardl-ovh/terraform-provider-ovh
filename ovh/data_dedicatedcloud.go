@@ -9,11 +9,12 @@ import (
 	"github.com/ovh/terraform-provider-ovh/ovh/helpers/hashcode"
 )
 
+// DedicatedClouds
 func dataSourceDedicatedClouds() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceDedicatedCloudsRead,
 		Schema: map[string]*schema.Schema{
-			"result": {
+			"dedicatedclouds": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -26,17 +27,19 @@ func dataSourceDedicatedCloudsRead(d *schema.ResourceData, meta interface{}) err
 	config := meta.(*Config)
 
 	result := make([]string, 0)
-	err := config.OVHClient.Get("/dedicatedCloud", &result)
+	endpoint := "/dedicatedCloud"
+	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	sort.Strings(result)
 	d.SetId(hashcode.Strings(result))
-	d.Set("result", result)
+	d.Set("dedicatedclouds", result)
 	return nil
 }
 
+// DedicatedCloud
 func dataSourceDedicatedCloud() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceDedicatedCloudRead,
@@ -143,14 +146,10 @@ func dataSourceDedicatedCloudRead(d *schema.ResourceData, meta interface{}) erro
 
 	dedicatedCloud := &DedicatedCloud{}
 
-	err := config.OVHClient.Get(
-		fmt.Sprintf("/dedicatedCloud/%s", url.PathEscape(serviceName)),
-		&dedicatedCloud,
-	)
-
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s", url.PathEscape(serviceName))
+	err := config.OVHClient.Get(endpoint, &dedicatedCloud)
 	if err != nil {
-		d.SetId("")
-		return nil
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	d.SetId(*dedicatedCloud.ServiceName)

@@ -1,5 +1,7 @@
 package ovh
 
+// DedicatedCloud
+
 type DedicatedCloud struct {
 	AdvancedSecurity           *bool                  `json:"advancedSecurity"`
 	Bandwidth                  *string                `json:"bandwidth"`
@@ -31,6 +33,8 @@ type DedicatedCloudVersion struct {
 	Minor *string `json:"minor"`
 }
 
+// Commercial Range
+
 type DedicatedCloudCommercialRange struct {
 	DedicatedCloudVersion     *string   `json:"dedicatedCloudVersion"`
 	AllowedNetworkRoles       *[]string `json:"allowedNetworkRoles"`
@@ -39,6 +43,8 @@ type DedicatedCloudCommercialRange struct {
 	Range                     *string   `json:"range"`
 }
 
+// Location
+
 type DedicatedCloudLocation struct {
 	Id          *int    `json:"id"`
 	PccZone     *string `json:"pccZone"`
@@ -46,10 +52,14 @@ type DedicatedCloudLocation struct {
 	CountryCode *string `json:"countryCode"`
 }
 
+// Host Profile
+
 type DedicatedCloudHostProfile struct {
 	Id   *int    `json:"id"`
 	Name *string `json:"name"`
 }
+
+// Os - Hypervisor
 
 type DedicatedCloudOs struct {
 	FullName             *string `json:"fullName"`
@@ -57,12 +67,16 @@ type DedicatedCloudOs struct {
 	ShortName            *string `json:"shortName"`
 }
 
+// Allowed Network
+
 type DedicatedCloudAllowedNetwork struct {
 	Description     *string `json:"description"`
 	Network         *string `json:"network"`
 	NetworkAccessId *int    `json:"networkAccessId"`
 	State           *string `json:"state"`
 }
+
+// Task
 
 type DedicatedCloudTask struct {
 	CreatedBy            *string `json:"createdBy"`
@@ -87,4 +101,92 @@ type DedicatedCloudTask struct {
 	Type                 *string `json:"type"`
 	UserId               *int    `json:"userId"`
 	VlanId               *int    `json:"vlanId"`
+}
+
+// Datacenter
+
+type DedicatedCloudDatacenter struct {
+	CommercialName      *string `json:"commercialName"`
+	CommercialRangeName *string `json:"commercialRangeName"`
+	DatacenterId        *int    `json:"datacenterId"`
+	Description         *string `json:"description"`
+	HorizonViewName     *string `json:"horizonViewName"`
+	IsRemovable         *bool   `json:"isRemovable"`
+	Name                *string `json:"name"`
+	Version             *string `json:"version"`
+}
+
+// Cluster
+
+type DedicatedCloudCluster struct {
+	Id              *int                     `json:"id"`
+	Autoscale       *DedicatedCloudAutoscale `json:"autoscale"`
+	DrsMode         *string                  `json:"drsMode"`
+	DrsStatus       *string                  `json:"drsStatus"`
+	EvcMode         *string                  `json:"evcMode"`
+	HaStatus        *string                  `json:"haStatus"`
+	Name            *string                  `json:"name"`
+	VmwareClusterId *string                  `json:"vmwareClusterId"`
+}
+
+type DedicatedCloudAutoscale struct {
+	AutoScaleInHost     *string `json:"autoScaleInHost"`
+	AutoScaleOutHost    *string `json:"autoScaleOutHost"`
+	AutoScaleOutStorage *string `json:"autoScaleOutStorage"`
+	ConfigId            *int    `json:"configId"`
+	Id                  *int    `json:"id"`
+	InMaintenanceMode   *bool   `json:"inMaintenanceMode"`
+	State               *string `json:"state"`
+}
+
+// User
+
+type DedicatedCloudUser struct {
+	ActivationState      *string `json:"activationState"`
+	ActiveDirectoryId    *int    `json:"activeDirectoryId"`
+	ActiveDirectoryType  *string `json:"activeDirectoryType"`
+	CanManageIpFailOvers *bool   `json:"canManageIpFailOvers"`
+	CanManageNetwork     *bool   `json:"canManageNetwork"`
+	CanManageRights      *bool   `json:"canManageRights"`
+	Email                *string `json:"email"`
+	EncryptionRight      *bool   `json:"encryptionRight"`
+	FirstName            *string `json:"firstName"`
+	FullAdminRo          *bool   `json:"fullAdminRo"`
+	IsEnableManageable   *bool   `json:"isEnableManageable"`
+	IsTokenValidator     *bool   `json:"isTokenValidator"`
+	LastName             *string `json:"lastName"`
+	Login                *string `json:"login"`
+	Name                 *string `json:"name"`
+	NsxRight             *bool   `json:"nsxRight"`
+	PhoneNumber          *string `json:"phoneNumber"`
+	ReceiveAlerts        *bool   `json:"receiveAlerts"`
+	State                *string `json:"state"`
+	UserId               *int    `json:"userId"`
+}
+
+// Filer
+
+type DedicatedCloudFiler struct {
+	ActiveNode        *string                  `json:"activeNode"`
+	BillingType       *string                  `json:"billingType"`
+	ConnectionState   *string                  `json:"connectionState"`
+	FilerId           *int                     `json:"filerId"`
+	FullProfile       *string                  `json:"fullProfile"`
+	IsManagedByOvh    *bool                    `json:"isManagedByOvh"`
+	Master            *string                  `json:"master"`
+	Name              *string                  `json:"name"`
+	Profile           *string                  `json:"profile"`
+	ResourceName      *string                  `json:"resourceName"`
+	Size              *DedicatedCloudFilerSize `json:"size"`
+	Slave             *string                  `json:"slave"`
+	SpaceFree         *int                     `json:"spaceFree"`
+	SpaceProvisionned *int                     `json:"spaceProvisionned"`
+	SpaceUsed         *int                     `json:"spaceUsed"`
+	State             *string                  `json:"state"`
+	VmTotal           *int                     `json:"vmTotal"`
+}
+
+type DedicatedCloudFilerSize struct {
+	Unit  *string `json:"unit"`
+	Value *int    `json:"value"`
 }

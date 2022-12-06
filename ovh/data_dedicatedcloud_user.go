@@ -2,6 +2,7 @@ package ovh
 
 import (
 	"fmt"
+	"net/url"
 	"sort"
 	"strconv"
 
@@ -9,34 +10,32 @@ import (
 	"github.com/ovh/terraform-provider-ovh/ovh/helpers/hashcode"
 )
 
-// Allowed networks
+// Users
 
-func dataSourceDedicatedCloudAllowedNetworks() *schema.Resource {
+func dataSourceDedicatedCloudUsers() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceDedicatedCloudAllowedNetworksRead,
+		Read: dataSourceDedicatedCloudUsersRead,
 		Schema: map[string]*schema.Schema{
 			"service_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"allowed_networks": {
+			"users": {
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeInt,
-				},
+				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
 		},
 	}
 }
 
-func dataSourceDedicatedCloudAllowedNetworksRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedCloudUsersRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
+
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user", url.PathEscape(serviceName))
+
 	result := make([]int, 0)
-
-	endpoint := fmt.Sprintf("/dedicatedCloud/%s/allowedNetwork", serviceName)
-
 	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
 		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
@@ -48,31 +47,91 @@ func dataSourceDedicatedCloudAllowedNetworksRead(d *schema.ResourceData, meta in
 		stringResults = append(stringResults, strconv.Itoa(i))
 	}
 	d.SetId(hashcode.Strings(stringResults))
-	d.Set("allowed_networks", result)
+	d.Set("users", result)
 
 	return nil
 }
 
-// Allowed network
+// User
 
-func dataSourceDedicatedCloudAllowedNetwork() *schema.Resource {
+func dataSourceDedicatedCloudUser() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceDedicatedCloudAllowedNetworkRead,
+		Read: dataSourceDedicatedCloudUserRead,
 		Schema: map[string]*schema.Schema{
 			"service_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_access_id": {
+			"user_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"description": {
+			"activation_state": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"network": {
+			"activedirectory_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"activedirectory_type": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"can_manage_ip_failovers": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"can_manage_rights": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"email": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"encryption_right": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"first_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"full_admin_ro": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"is_enable_manageable": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"is_token_validator": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"last_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"login": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"nsx_right": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"phone_number": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"receive_alerts": {
+				Type:     schema.TypeBool,
 				Computed: true,
 			},
 			"state": {
@@ -83,42 +142,60 @@ func dataSourceDedicatedCloudAllowedNetwork() *schema.Resource {
 	}
 }
 
-func dataSourceDedicatedCloudAllowedNetworkRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedCloudUserRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
-	allowedNetworkId := d.Get("network_access_id").(int)
-	allowedNetwork := &DedicatedCloudAllowedNetwork{}
+	userId := d.Get("user_id").(int)
+	user := &DedicatedCloudUser{}
 
-	endpoint := fmt.Sprintf("/dedicatedCloud/%s/allowedNetwork/%d", serviceName, allowedNetworkId)
-
-	err := config.OVHClient.Get(
-		endpoint,
-		&allowedNetwork,
-	)
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d", serviceName, userId)
+	err := config.OVHClient.Get(endpoint, &user)
 	if err != nil {
 		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
-	d.SetId(fmt.Sprintf("%s/%d", d.Get("service_name"), d.Get("network_access_id").(int)))
-	d.Set("description", *allowedNetwork.Description)
-	d.Set("network", *allowedNetwork.Network)
-	d.Set("network_access_id", d.Get("network_access_id").(int))
-	d.Set("state", *allowedNetwork.State)
+	d.SetId(fmt.Sprintf("%s/%d", d.Get("service_name").(string), *user.UserId))
+	d.Set("activation_state", *user.ActivationState)
+	d.Set("activedirectory_id", *user.ActiveDirectoryId)
+	d.Set("activedirectory_type", *user.ActiveDirectoryType)
+	d.Set("can_manage_ip_failovers", *user.CanManageIpFailOvers)
+	d.Set("can_manage_network", *user.CanManageNetwork)
+	d.Set("can_manage_rights", *user.CanManageRights)
+	d.Set("email", *user.Email)
+	d.Set("encryption_right", *user.EncryptionRight)
+	if user.FirstName != nil {
+		d.Set("first_name", *user.FirstName)
+	}
+	d.Set("full_admin_ro", *user.FullAdminRo)
+	d.Set("is_enable_manageable", *user.IsEnableManageable)
+	d.Set("is_token_validator", *user.IsTokenValidator)
+	if user.LastName != nil {
+		d.Set("last_name", *user.LastName)
+	}
+	d.Set("login", *user.Login)
+	d.Set("name", *user.Name)
+	d.Set("nsx_right", *user.NsxRight)
+	if user.PhoneNumber != nil {
+		d.Set("phone_number", *user.PhoneNumber)
+	}
+	d.Set("receive_alerts", *user.ReceiveAlerts)
+	d.Set("state", *user.State)
+	d.Set("user_id", d.Get("user_id"))
 
 	return nil
 }
 
-// Allowed network tasks
+// User tasks
 
-func dataSourceDedicatedCloudAllowedNetworkTasks() *schema.Resource {
+func dataSourceDedicatedCloudUserTasks() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceDedicatedCloudAllowedNetworksRead,
+		Read: dataSourceDedicatedCloudUserTasksRead,
 		Schema: map[string]*schema.Schema{
 			"service_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_access_id": {
+			"user_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -133,14 +210,13 @@ func dataSourceDedicatedCloudAllowedNetworkTasks() *schema.Resource {
 	}
 }
 
-func dataSourceDedicatedCloudAllowedNetworkTasksRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedCloudUserTasksRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
-	allowedNetworkId := d.Get("network_access_id").(string)
+	userId := d.Get("user_id").(int)
 	result := make([]int, 0)
 
-	endpoint := fmt.Sprintf("/dedicatedCloud/%s/allowedNetwork/%s/task", serviceName, allowedNetworkId)
-
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d/task", serviceName, userId)
 	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
 		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
@@ -157,17 +233,17 @@ func dataSourceDedicatedCloudAllowedNetworkTasksRead(d *schema.ResourceData, met
 	return nil
 }
 
-// Allowed network task
+// User task
 
-func dataSourceDedicatedCloudAllowedNetworkTask() *schema.Resource {
+func dataSourceDedicatedCloudUserTask() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceDedicatedCloudAllowedNetworkTaskRead,
+		Read: dataSourceDedicatedCloudUserTaskRead,
 		Schema: map[string]*schema.Schema{
 			"service_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"network_access_id": {
+			"user_id": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -181,10 +257,6 @@ func dataSourceDedicatedCloudAllowedNetworkTask() *schema.Resource {
 			},
 			"created_from": {
 				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"datacenter_id": {
-				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"description": {
@@ -227,6 +299,10 @@ func dataSourceDedicatedCloudAllowedNetworkTask() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"network_access_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"order_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -243,7 +319,7 @@ func dataSourceDedicatedCloudAllowedNetworkTask() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"user_id": {
+			"datacenter_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
@@ -255,23 +331,20 @@ func dataSourceDedicatedCloudAllowedNetworkTask() *schema.Resource {
 	}
 }
 
-func dataSourceDedicatedCloudAllowedNetworkTaskRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedCloudUserTaskRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
-	allowedNetworkId := d.Get("network_access_id").(int)
+	userId := d.Get("user_id").(int)
 	taskId := d.Get("task_id").(int)
 	task := &DedicatedCloudTask{}
 
-	endpoint := fmt.Sprintf("/dedicatedCloud/%s/allowedNetwork/%d/task/%d", serviceName, allowedNetworkId, taskId)
-	err := config.OVHClient.Get(
-		endpoint,
-		&task,
-	)
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d/task/%d", serviceName, userId, taskId)
+	err := config.OVHClient.Get(endpoint, &task)
 	if err != nil {
 		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
-	d.SetId(fmt.Sprintf("%s/%d/%d", d.Get("service_name"), d.Get("network_access_id"), d.Get("task_id")))
+	d.SetId(fmt.Sprintf("%s/%d/%d", d.Get("service_name"), d.Get("user_id"), d.Get("task_id")))
 	d.Set("created_by", task.CreatedBy)
 	d.Set("created_from", task.CreatedFrom)
 	d.Set("datacenter_id", task.DatacenterId)

@@ -9,11 +9,13 @@ import (
 	"github.com/ovh/terraform-provider-ovh/ovh/helpers/hashcode"
 )
 
+// Commercial ranges
+
 func dataSourceDedicatedCloudCommercialRanges() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceDedicatedCloudCommercialRangesRead,
 		Schema: map[string]*schema.Schema{
-			"result": {
+			"commercialranges": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
@@ -26,19 +28,22 @@ func dataSourceDedicatedCloudCommercialRanges() *schema.Resource {
 
 func dataSourceDedicatedCloudCommercialRangesRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*Config)
-
 	result := make([]string, 0)
-	err := config.OVHClient.Get("/dedicatedCloud/commercialRange", &result)
+	endpoint := "/dedicatedCloud/commercialRange"
+
+	err := config.OVHClient.Get(endpoint, &result)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud/commercialRange information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	sort.Strings(result)
 	d.SetId(hashcode.Strings(result))
-	d.Set("result", result)
+	d.Set("commercialranges", result)
 
 	return nil
 }
+
+// Commercial range
 
 func dataSourceDedicatedCloudCommercianRange() *schema.Resource {
 	return &schema.Resource{
@@ -78,12 +83,13 @@ func dataSourceDedicatedCloudCommercialRangeRead(d *schema.ResourceData, meta in
 	config := meta.(*Config)
 	commercialRangeName := d.Get("commercialrange_name").(string)
 	commercialRange := &DedicatedCloudCommercialRange{}
+	endpoint := fmt.Sprintf("/dedicatedCloud/commercialRange/%s", url.PathEscape(commercialRangeName))
 	err := config.OVHClient.Get(
-		fmt.Sprintf("/dedicatedCloud/commercialRange/%s", url.PathEscape(commercialRangeName)),
+		endpoint,
 		&commercialRange,
 	)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve /dedicatedCloud/commercialRange/{commercialRangeName} information:\n\t %q", err)
+		return fmt.Errorf("Error calling GET %s:\n\t %q", endpoint, err)
 	}
 
 	d.SetId(*commercialRange.CommercialRangeName)
