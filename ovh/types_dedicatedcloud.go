@@ -1,5 +1,10 @@
 package ovh
 
+import (
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	// "github.com/ovh/terraform-provider-ovh/ovh/helpers"
+)
+
 // DedicatedCloud
 
 type DedicatedCloud struct {
@@ -162,6 +167,72 @@ type DedicatedCloudUser struct {
 	ReceiveAlerts        *bool   `json:"receiveAlerts"`
 	State                *string `json:"state"`
 	UserId               *int    `json:"userId"`
+}
+
+func (v DedicatedCloudUser) ToMap() map[string]interface{} {
+	obj := make(map[string]interface{})
+	obj["login"] = v.Login
+	obj["user_id"] = v.UserId
+	if v.ActivationState != nil {
+		obj["activation_state"] = v.ActivationState
+	}
+	if v.ActiveDirectoryId != nil {
+		obj["activedirectory_id"] = v.ActiveDirectoryId
+	}
+	if v.ActiveDirectoryType != nil {
+		obj["activedirectory_type"] = v.ActiveDirectoryType
+	}
+	obj["can_manage_ip_failovers"] = v.CanManageIpFailOvers
+	obj["can_manage_rights"] = v.CanManageRights
+	if v.Email != nil {
+		obj["email"] = v.Email
+	}
+	obj["encryption_right"] = v.EncryptionRight
+	if v.FirstName != nil {
+		obj["first_name"] = v.FirstName
+	}
+	obj["full_admin_ro"] = v.FullAdminRo
+	obj["is_enable_manageable"] = v.IsEnableManageable
+	obj["is_token_validator"] = v.IsTokenValidator
+	if v.LastName != nil {
+		obj["last_name"] = v.LastName
+	}
+	obj["name"] = v.Name
+	obj["nsx_right"] = v.NsxRight
+	if v.PhoneNumber != nil {
+		obj["phone_number"] = v.PhoneNumber
+	}
+	obj["receive_alerts"] = v.ReceiveAlerts
+	obj["state"] = v.State
+
+	return obj
+}
+
+type DedicatedCloudUserCreateOpts struct {
+	ServiceName string `json:"serviceName"`
+	// CanAddResource *bool `json:"canAddRessource` // ... And no, this is not a typo >_>
+	// CanManageRights *bool `json:"canManageRights"`
+	// Email *string `json:"email"`
+	// EncryptionRight *bool `json:"encryptionRight"`
+	// ExpirationDate *string `json:"expirationDate"`
+	// FirstName *string `json:"firstName"`
+	// LastName *string `json:"lastName"`
+	Login string `json:"name"`
+	// NetworkRole *string `json:"networkRole"`
+	// NsxRight *bool `json:"nsxRight"`
+	// Password *string `json:"password"`
+	// PhoneNumber *string `json:"phoneNumber"`
+	// ReceiveAlerts *bool `json:"receiveAlerts"`
+	// Right *string `json:"right"`
+	// TokenValidator *bool `json:"tokenValidator"`
+	// VmNetworkRole *string `json:"vmNetworkRole"`
+}
+
+func (opts *DedicatedCloudUserCreateOpts) FromResource(d *schema.ResourceData) *DedicatedCloudUserCreateOpts {
+	opts.ServiceName = d.Get("service_name").(string)
+	opts.Login = d.Get("login").(string)
+
+	return opts
 }
 
 // Filer
