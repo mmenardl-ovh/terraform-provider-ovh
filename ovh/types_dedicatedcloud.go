@@ -209,7 +209,6 @@ func (v DedicatedCloudUser) ToMap() map[string]interface{} {
 }
 
 type DedicatedCloudUserCreateOpts struct {
-	ServiceName string `json:"serviceName"`
 	// CanAddResource *bool `json:"canAddRessource` // ... And no, this is not a typo >_>
 	// CanManageRights *bool `json:"canManageRights"`
 	// Email *string `json:"email"`
@@ -229,7 +228,6 @@ type DedicatedCloudUserCreateOpts struct {
 }
 
 func (opts *DedicatedCloudUserCreateOpts) FromResource(d *schema.ResourceData) *DedicatedCloudUserCreateOpts {
-	opts.ServiceName = d.Get("service_name").(string)
 	opts.Login = d.Get("login").(string)
 
 	return opts

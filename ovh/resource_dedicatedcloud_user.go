@@ -19,6 +19,7 @@ func resourceDedicatedCloudUser() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceDedicatedCloudUserCreate,
 		Read:   resourceDedicatedCloudUserRead,
+		Update: resourceDedicatedCloudUserRead,
 		Delete: resourceDedicatedCloudUserDelete,
 		// Importer: &schema.ResourceImporter{
 		// 	State: resourceDedicatedCloudUserImportState,
@@ -41,41 +42,49 @@ func resourceDedicatedCloudUser() *schema.Resource {
 			"can_manage_ip_failovers": {
 				Type:        schema.TypeBool,
 				Description: "Defines if the user can manage ip failovers",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"can_manage_rights": {
 				Type:        schema.TypeBool,
 				Description: "Defines if the user can manage users rights",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"email": {
 				Type:        schema.TypeString,
 				Description: "Email address of the user",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"encryption_right": {
 				Type:        schema.TypeBool,
 				Description: "Defines if the user can manage encryption / KMS configuration",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"first_name": {
 				Type:        schema.TypeString,
 				Description: "First name of the user",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"is_enable_manageable": {
 				Type:        schema.TypeBool,
 				Description: "Check if the given Dedicated Cloud user can be enabled or disabled ?",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"is_token_validator": {
 				Type:        schema.TypeBool,
 				Description: "Defines if the user can confirm security tokens (if a compatible option is enabled)",
+				ForceNew:    false,
 				Optional:    true,
 			},
 			"last_name": {
 				Type:        schema.TypeString,
 				Description: "Last name of the user",
+				ForceNew:    false,
 				Optional:    true,
 			},
 
