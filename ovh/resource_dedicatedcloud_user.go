@@ -139,7 +139,7 @@ func resourceDedicatedCloudUserCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	log.Printf("[DEBUG][Create][WaitForArchived] DedicatedCloudTask (for user)")
-	endpoint = fmt.Sprintf("/hosting/privateDatabase/%s/tasks/%d", url.PathEscape(serviceName), task.TaskId)
+	endpoint = fmt.Sprintf("/dedicatedCloud/%s/task/%s", url.PathEscape(serviceName), strconv.Itoa(*task.TaskId))
 	err = WaitArchivedHostingPrivateDabaseTask(config.OVHClient, endpoint, 6*time.Minute)
 	if err != nil {
 		return err
@@ -203,7 +203,7 @@ func resourceDedicatedCloudUserDelete(d *schema.ResourceData, meta interface{}) 
 
 	// Wait for delete task
 	log.Printf("[DEBUG][Delete][WaitForArchived] DedicatedCloudTask (for user)")
-	endpoint = fmt.Sprintf("/hosting/privateDatabase/%s/tasks/%d", url.PathEscape(serviceName), task.TaskId)
+	endpoint = fmt.Sprintf("/dedicatedCloud/%s/task/%s", url.PathEscape(serviceName), strconv.Itoa(*task.TaskId))
 	err := WaitArchivedHostingPrivateDabaseTask(config.OVHClient, endpoint, 6*time.Minute)
 	if err != nil {
 		return err
