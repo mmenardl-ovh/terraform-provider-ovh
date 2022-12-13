@@ -7,7 +7,6 @@ import (
 
 	// "log"
 	"net/url"
-	"strconv"
 
 	//  "strings"
 
@@ -133,15 +132,12 @@ func resourceDedicatedCloudUserCreate(d *schema.ResourceData, meta interface{}) 
 
 	log.Printf("[DEBUG][Create] DedicatedCloudTask (for user)")
 	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user", url.PathEscape(serviceName))
-	err := config.OVHClient.Post(endpoint, opts, &task)
-	if err != nil {
+	if err := config.OVHClient.Post(endpoint, opts, &task); err != nil {
 		return fmt.Errorf("failed to create DedicatedCloud user: %s", err)
 	}
 
-	log.Printf("[DEBUG][Create][WaitForArchived] DedicatedCloudTask (for user)")
-	endpoint = fmt.Sprintf("/dedicatedCloud/%s/task/%s", url.PathEscape(serviceName), strconv.Itoa(*task.TaskId))
-	err = WaitArchivedHostingPrivateDabaseTask(config.OVHClient, endpoint, 6*time.Minute)
-	if err != nil {
+	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask (for user)")
+	if err := waitForDedicatedCloudTask(6*time.Minute, serviceName, task, config.OVHClient); err != nil {
 		return err
 	}
 
@@ -158,14 +154,14 @@ func resourceDedicatedCloudUserRead(d *schema.ResourceData, meta interface{}) er
 
 	// lookup user's id
 	lookupEndpoint := fmt.Sprintf("/dedicatedCloud/%s/user&name=%s", url.PathEscape(serviceName), url.PathEscape(userLogin))
-	lookupResult := make([]int, 0)
+	lookupResult := make([]int64, 0)
 	if err := config.OVHClient.Get(lookupEndpoint, &lookupResult); err != nil || len(lookupResult) != 1 {
 		d.SetId("")
 		return nil
 	}
 
 	// lookup user detail
-	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%s", url.PathEscape(serviceName), url.PathEscape(strconv.Itoa(lookupResult[0])))
+	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), lookupResult[0])
 	if err := config.OVHClient.Get(endpoint, &ds); err != nil {
 		return helpers.CheckDeleted(d, err, endpoint)
 	}
@@ -202,10 +198,8 @@ func resourceDedicatedCloudUserDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// Wait for delete task
-	log.Printf("[DEBUG][Delete][WaitForArchived] DedicatedCloudTask (for user)")
-	endpoint = fmt.Sprintf("/dedicatedCloud/%s/task/%s", url.PathEscape(serviceName), strconv.Itoa(*task.TaskId))
-	err := WaitArchivedHostingPrivateDabaseTask(config.OVHClient, endpoint, 6*time.Minute)
-	if err != nil {
+	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask (for user)")
+	if err := waitForDedicatedCloudTask(6*time.Minute, serviceName, task, config.OVHClient); err != nil {
 		return err
 	}
 

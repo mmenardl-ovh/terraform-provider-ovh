@@ -86,26 +86,26 @@ type DedicatedCloudAllowedNetwork struct {
 type DedicatedCloudTask struct {
 	CreatedBy            *string `json:"createdBy"`
 	CreatedFrom          *string `json:"createdFrom"`
-	DatacenterId         *int    `json:"datacenterId"`
+	DatacenterId         *int64  `json:"datacenterId"`
 	Description          *string `json:"description"`
 	EndDate              *string `json:"endDate"`
 	ExecutionDate        *string `json:"executionDate"`
-	FilerId              *int    `json:"filerId"`
-	HostId               *int    `json:"hostId"`
+	FilerId              *int64  `json:"filerId"`
+	HostId               *int64  `json:"hostId"`
 	LastModificationDate *string `json:"lastModificationDate"`
 	MaintenanceDateFrom  *string `json:"maintenanceDateFrom"`
 	MaintenanceDateTo    *string `json:"maintenanceDateTo"`
 	Name                 *string `json:"name"`
 	Network              *string `json:"network"`
-	NetworkAccessId      *int    `json:"networkAccessId"`
-	OrderId              *int    `json:"orderId"`
-	ParentTaskId         *int    `json:"parentTaskId"`
+	NetworkAccessId      *int64  `json:"networkAccessId"`
+	OrderId              *int64  `json:"orderId"`
+	ParentTaskId         *int64  `json:"parentTaskId"`
 	Progress             *int    `json:"progress"`
 	State                *string `json:"state"`
-	TaskId               *int    `json:"taskId"`
+	TaskId               *int64  `json:"taskId"`
 	Type                 *string `json:"type"`
-	UserId               *int    `json:"userId"`
-	VlanId               *int    `json:"vlanId"`
+	UserId               *int64  `json:"userId"`
+	VlanId               *int64  `json:"vlanId"`
 }
 
 // Datacenter
