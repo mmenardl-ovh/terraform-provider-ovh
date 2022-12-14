@@ -10,8 +10,8 @@ import (
 	"github.com/ovh/go-ovh/ovh"
 )
 
-func getDedicatedCloudUserIds(serviceName string, userName string, c *ovh.Client) ([]int64, error) {
-	userIds := make([]int64, 0)
+func getDedicatedCloudUserIds(serviceName string, userName string, c *ovh.Client) ([]int, error) {
+	userIds := []int{}
 
 	var endpoint string
 	if userName != "" {
@@ -22,7 +22,7 @@ func getDedicatedCloudUserIds(serviceName string, userName string, c *ovh.Client
 		log.Printf("[INFO] Fetching userId list for %s", serviceName)
 	}
 
-	if err := c.Get(endpoint, userIds); err != nil {
+	if err := c.Get(endpoint, &userIds); err != nil {
 		return nil, err
 	}
 
@@ -36,9 +36,9 @@ func getDedicatedCloudUser(serviceName string, userName string, c *ovh.Client) (
 	if err != nil {
 		return nil, err
 	}
-	// if len(userIds) == 0 {
-	// 	return nil, fmt.Errorf("Error looking up user %s/%s: user not found", serviceName, userName, err)
-	// }
+	if len(userIds) == 0 {
+		return nil, fmt.Errorf("Error looking up user %s/%s: user not found", serviceName, userName, err)
+	}
 
 	// if len(userIds) > 1 {
 	// 	log.Printf("[INFO] Multiple hits on login %s on %s", userName, serviceName)
@@ -47,7 +47,7 @@ func getDedicatedCloudUser(serviceName string, userName string, c *ovh.Client) (
 	var endpoint string
 	for _, userId := range userIds {
 		log.Printf("[INFO] Checking if DedicatedCloudUser userId %d is %s/%s", userId, serviceName, userName)
-		endpoint = fmt.Sprint("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), userId)
+		endpoint = fmt.Sprintf("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), userId)
 		if errLookup := c.Get(endpoint, &user); errLookup != nil {
 			return nil, errLookup
 		}
