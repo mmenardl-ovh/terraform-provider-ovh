@@ -150,25 +150,39 @@ func resourceDedicatedCloudUserRead(d *schema.ResourceData, meta interface{}) er
 	serviceName := d.Get("service_name").(string)
 	userLogin := d.Get("login").(string)
 
-	ds := &DedicatedCloudUser{}
+	// ds := &DedicatedCloudUser{}
 
 	// lookup user's id
-	lookupEndpoint := fmt.Sprintf("/dedicatedCloud/%s/user&name=%s", url.PathEscape(serviceName), url.PathEscape(userLogin))
-	lookupResult := make([]int64, 0)
-	if err := config.OVHClient.Get(lookupEndpoint, &lookupResult); err != nil || len(lookupResult) != 1 {
-		d.SetId("")
-		return nil
-	}
+	// lookupEndpoint := fmt.Sprintf("/dedicatedCloud/%s/user&name=%s", url.PathEscape(serviceName), url.PathEscape(userLogin))
+	// lookupResult := make([]int64, 0)
+	// if err := config.OVHClient.Get(lookupEndpoint, &lookupResult); err != nil || len(lookupResult) != 1 {
+	// 	d.SetId("")
+	// 	return nil
+	// }
 
 	// lookup user detail
-	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), lookupResult[0])
-	if err := config.OVHClient.Get(endpoint, &ds); err != nil {
-		return helpers.CheckDeleted(d, err, endpoint)
+	// endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), lookupResult[0])
+	// if err := config.OVHClient.Get(endpoint, &ds); err != nil {
+	//return helpers.CheckDeleted(d, err, endpoint)
+	// }
+
+	// d.SetId(fmt.Sprintf("%s/%s", serviceName, userLogin))
+	// d.Set("service_name", serviceName)
+	// for k, v := range ds.ToMap() {
+	// 	d.Set(k, v)
+	// }
+
+	log.Printf("[INFO] Fetching user %s/%s details", serviceName, userLogin)
+	user, err := getDedicatedCloudUser(serviceName, userLogin, config.OVHClient)
+	if err != nil {
+		d.SetId("")
+		return err
 	}
 
-	d.SetId(fmt.Sprintf("%s/%s", serviceName, userLogin))
+	log.Printf("[INFO] Found DedicatedCloud user %s/%s with %d", serviceName, *user.Login, *user.UserId)
+	d.SetId(fmt.Sprint("%s/%s", serviceName, user.Login))
 	d.Set("service_name", serviceName)
-	for k, v := range ds.ToMap() {
+	for k, v := range user.ToMap() {
 		d.Set(k, v)
 	}
 
