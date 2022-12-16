@@ -1,6 +1,7 @@
 package ovh
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -10,16 +11,17 @@ import (
 
 	//  "strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/ovh/terraform-provider-ovh/ovh/helpers"
+	// "github.com/ovh/terraform-provider-ovh/ovh/helpers"
 )
 
 func resourceDedicatedCloudUser() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceDedicatedCloudUserCreate,
-		Read:   resourceDedicatedCloudUserRead,
-		Update: resourceDedicatedCloudUserRead,
-		Delete: resourceDedicatedCloudUserDelete,
+		CreateContext: resourceDedicatedCloudUserCreate,
+		ReadContext:   resourceDedicatedCloudUserRead,
+		UpdateContext: resourceDedicatedCloudUserRead,
+		DeleteContext: resourceDedicatedCloudUserDelete,
 		// Importer: &schema.ResourceImporter{
 		// 	State: resourceDedicatedCloudUserImportState,
 		// },
@@ -122,7 +124,7 @@ func resourceDedicatedCloudUser() *schema.Resource {
 	}
 }
 
-func resourceDedicatedCloudUserCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedCloudUserCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
 	userLogin := d.Get("login").(string)
@@ -133,50 +135,54 @@ func resourceDedicatedCloudUserCreate(d *schema.ResourceData, meta interface{}) 
 	log.Printf("[DEBUG][Create] DedicatedCloudTask (for user)")
 	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user", url.PathEscape(serviceName))
 	if err := config.OVHClient.Post(endpoint, opts, &task); err != nil {
-		return fmt.Errorf("failed to create DedicatedCloud user: %s", err)
+		return diag.FromErr(err)
 	}
 
 	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask (for user)")
 	if err := waitForDedicatedCloudTask(6*time.Minute, serviceName, task, config.OVHClient); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%s/%s", serviceName, userLogin))
-	return resourceDedicatedCloudUserRead(d, meta)
+	return resourceDedicatedCloudUserRead(ctx, d, meta)
 }
 
-func resourceDedicatedCloudUserRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedCloudUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
 	userLogin := d.Get("login").(string)
+
+	var diags diag.Diagnostics
 
 	log.Printf("[INFO] Fetching user %s/%s details", serviceName, userLogin)
 	user, err := getDedicatedCloudUser(serviceName, userLogin, config.OVHClient)
 	if err != nil {
 		d.SetId("")
-		return err
+		return diag.FromErr(err)
 	}
 
 	log.Printf("[INFO] Found DedicatedCloud user %s/%s with %d", serviceName, *user.Login, *user.UserId)
-	d.SetId(fmt.Sprintf("%s/%s", serviceName, user.Login))
+	d.SetId(fmt.Sprintf("%s/%s", serviceName, *user.Login))
 	d.Set("service_name", serviceName)
 	for k, v := range user.ToMap() {
 		d.Set(k, v)
 	}
 
-	return nil
+	return diags
 }
 
-func resourceDedicatedCloudUserDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedCloudUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*Config)
 	serviceName := d.Get("service_name").(string)
 	userLogin := d.Get("login").(string)
+
+	var diags diag.Diagnostics
 
 	log.Printf("[INFO] Fetching user %s/%s details", serviceName, userLogin)
 	user, err := getDedicatedCloudUser(serviceName, userLogin, config.OVHClient)
 	if err != nil {
 		d.SetId("")
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Create delete task
@@ -185,15 +191,16 @@ func resourceDedicatedCloudUserDelete(d *schema.ResourceData, meta interface{}) 
 	log.Printf("[DEBUG][Delete] DedicatedCloudTask (for user)")
 	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), *user.UserId)
 	if err := config.OVHClient.Delete(endpoint, task); err != nil {
-		helpers.CheckDeleted(d, err, endpoint)
+		return diag.FromErr(err)
+		// helpers.CheckDeleted(d, err, endpoint)
 	}
 
 	// Wait for delete task
 	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask (for user)")
-	if err := waitForDedicatedCloudTask(6*time.Minute, serviceName, task, config.OVHClient); err != nil {
-		return err
+	if err := waitForDedicatedCloudTask(20*time.Minute, serviceName, task, config.OVHClient); err != nil {
+		return diag.FromErr(err)
 	}
 
 	d.SetId("")
-	return nil
+	return diags
 }

@@ -37,12 +37,12 @@ func getDedicatedCloudUser(serviceName string, userName string, c *ovh.Client) (
 		return nil, err
 	}
 	if len(userIds) == 0 {
-		return nil, fmt.Errorf("Error looking up user %s/%s: user not found", serviceName, userName, err)
+		return nil, fmt.Errorf("looking up user %s/%s: user not found", serviceName, userName)
 	}
 
-	// if len(userIds) > 1 {
-	// 	log.Printf("[INFO] Multiple hits on login %s on %s", userName, serviceName)
-	// }
+	if len(userIds) > 1 {
+		log.Printf("[INFO] Multiple hits on login %s on %s", userName, serviceName)
+	}
 
 	var endpoint string
 	for _, userId := range userIds {

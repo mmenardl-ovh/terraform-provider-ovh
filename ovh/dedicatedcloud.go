@@ -12,7 +12,7 @@ import (
 )
 
 func waitForDedicatedCloudTask(timeout time.Duration, serviceName string, task *DedicatedCloudTask, c *ovh.Client) error {
-	taskId := task.TaskId
+	taskId := *task.TaskId
 
 	refreshFunc := func() (interface{}, string, error) {
 		var taskErr error
@@ -24,7 +24,7 @@ func waitForDedicatedCloudTask(timeout time.Duration, serviceName string, task *
 		// api endpoint call and the target region executing the task
 		retryErr := resource.Retry(2*time.Minute, func() *resource.RetryError {
 			var err error
-			task, err = getDedicatedCloudTask(serviceName, *taskId, c)
+			task, err = getDedicatedCloudTask(serviceName, taskId, c)
 			if err != nil {
 				if errOvh, ok := err.(*ovh.APIError); ok && (errOvh.Code == 404 || errOvh.Code == 500) {
 					return resource.RetryableError(err)
@@ -59,7 +59,7 @@ func waitForDedicatedCloudTask(timeout time.Duration, serviceName string, task *
 	}
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return fmt.Errorf("Error waiting for DedicatedCloud task %s/%d to complete: %s", serviceName, taskId, err)
+		return fmt.Errorf("error waiting for DedicatedCloud task %s/%d to complete", serviceName, taskId)
 	}
 
 	return nil
