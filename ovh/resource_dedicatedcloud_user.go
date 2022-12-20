@@ -6,21 +6,17 @@ import (
 	"log"
 	"time"
 
-	// "log"
 	"net/url"
-
-	//  "strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	// "github.com/ovh/terraform-provider-ovh/ovh/helpers"
 )
 
 func resourceDedicatedCloudUser() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceDedicatedCloudUserCreate,
 		ReadContext:   resourceDedicatedCloudUserRead,
-		UpdateContext: resourceDedicatedCloudUserRead,
+		UpdateContext: resourceDedicatedCloudUserUpdate,
 		DeleteContext: resourceDedicatedCloudUserDelete,
 		// Importer: &schema.ResourceImporter{
 		// 	State: resourceDedicatedCloudUserImportState,
@@ -45,12 +41,14 @@ func resourceDedicatedCloudUser() *schema.Resource {
 				Description: "Defines if the user can manage ip failovers",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
 			},
 			"can_manage_rights": {
 				Type:        schema.TypeBool,
 				Description: "Defines if the user can manage users rights",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
 			},
 			"email": {
 				Type:        schema.TypeString,
@@ -63,30 +61,56 @@ func resourceDedicatedCloudUser() *schema.Resource {
 				Description: "Defines if the user can manage encryption / KMS configuration",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
 			},
 			"first_name": {
 				Type:        schema.TypeString,
 				Description: "First name of the user",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
 			},
-			"is_enable_manageable": {
+			"full_admin_ro": {
 				Type:        schema.TypeBool,
-				Description: "Check if the given Dedicated Cloud user can be enabled or disabled ?",
+				Description: "Defines if the user is a full admin in readonly",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
 			},
 			"is_token_validator": {
 				Type:        schema.TypeBool,
 				Description: "Defines if the user can confirm security tokens (if a compatible option is enabled)",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
 			},
 			"last_name": {
 				Type:        schema.TypeString,
 				Description: "Last name of the user",
 				ForceNew:    false,
 				Optional:    true,
+				Computed:    true,
+			},
+			"nsx_right": {
+				Type:        schema.TypeBool,
+				Description: "Is this User able to access nsx interface (requires NSX option)",
+				ForceNew:    false,
+				Optional:    true,
+				Computed:    true,
+			},
+			"phone_number": {
+				Type:        schema.TypeString,
+				Description: "Mobile phone number of the user",
+				ForceNew:    false,
+				Optional:    true,
+				Computed:    true,
+			},
+			"receive_alerts": {
+				Type:        schema.TypeBool,
+				Description: "Defines if the user receives technical alerts",
+				ForceNew:    false,
+				Optional:    true,
+				Computed:    true,
 			},
 
 			// Computed
@@ -105,9 +129,9 @@ func resourceDedicatedCloudUser() *schema.Resource {
 				Description: "Federation Active Directory user type (if any)",
 				Computed:    true,
 			},
-			"full_admin_ro": {
+			"is_enable_manageable": {
 				Type:        schema.TypeBool,
-				Description: "Defines if the user is a full admin in readonly",
+				Description: "Check if the given Dedicated Cloud user can be enabled or disabled ?",
 				Computed:    true,
 			},
 			"state": {
@@ -116,8 +140,8 @@ func resourceDedicatedCloudUser() *schema.Resource {
 				Computed:    true,
 			},
 			"user_id": {
-				Type:        schema.TypeString,
-				Description: "User name",
+				Type:        schema.TypeInt,
+				Description: "User ID",
 				Computed:    true,
 			},
 		},
@@ -138,7 +162,7 @@ func resourceDedicatedCloudUserCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask (for user)")
+	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask addUser for %s/%s", serviceName, userLogin)
 	if err := waitForDedicatedCloudTask(6*time.Minute, serviceName, task, config.OVHClient); err != nil {
 		return diag.FromErr(err)
 	}
@@ -154,7 +178,6 @@ func resourceDedicatedCloudUserRead(ctx context.Context, d *schema.ResourceData,
 
 	var diags diag.Diagnostics
 
-	log.Printf("[INFO] Fetching user %s/%s details", serviceName, userLogin)
 	user, err := getDedicatedCloudUser(serviceName, userLogin, config.OVHClient)
 	if err != nil {
 		d.SetId("")
@@ -165,8 +188,16 @@ func resourceDedicatedCloudUserRead(ctx context.Context, d *schema.ResourceData,
 	d.SetId(fmt.Sprintf("%s/%s", serviceName, *user.Login))
 	d.Set("service_name", serviceName)
 	for k, v := range user.ToMap() {
-		d.Set(k, v)
+		if k != "name" {
+			d.Set(k, v)
+		}
 	}
+
+	return diags
+}
+
+func resourceDedicatedCloudUserUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	return diags
 }
@@ -178,7 +209,6 @@ func resourceDedicatedCloudUserDelete(ctx context.Context, d *schema.ResourceDat
 
 	var diags diag.Diagnostics
 
-	log.Printf("[INFO] Fetching user %s/%s details", serviceName, userLogin)
 	user, err := getDedicatedCloudUser(serviceName, userLogin, config.OVHClient)
 	if err != nil {
 		d.SetId("")
@@ -188,15 +218,14 @@ func resourceDedicatedCloudUserDelete(ctx context.Context, d *schema.ResourceDat
 	// Create delete task
 	task := &DedicatedCloudTask{}
 
-	log.Printf("[DEBUG][Delete] DedicatedCloudTask (for user)")
+	log.Printf("[DEBUG][Delete] Create DedicatedCloudTask removeUser for %s/%s (%d)", serviceName, userLogin, *user.UserId)
 	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d", url.PathEscape(serviceName), *user.UserId)
 	if err := config.OVHClient.Delete(endpoint, task); err != nil {
 		return diag.FromErr(err)
-		// helpers.CheckDeleted(d, err, endpoint)
 	}
 
 	// Wait for delete task
-	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask (for user)")
+	log.Printf("[DEBUG][Create][WaitForDone] DedicatedCloudTask removeUser %d to transit to state done.", *task.TaskId)
 	if err := waitForDedicatedCloudTask(20*time.Minute, serviceName, task, config.OVHClient); err != nil {
 		return diag.FromErr(err)
 	}
