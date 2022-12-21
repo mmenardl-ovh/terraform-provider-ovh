@@ -181,9 +181,8 @@ func (v DedicatedCloudUser) ToMap() map[string]interface{} {
 	if v.ActiveDirectoryType != nil {
 		obj["activedirectory_type"] = *v.ActiveDirectoryType
 	}
-	if v.CanManageIpFailOvers != nil {
-		obj["can_manage_ip_failovers"] = *v.CanManageIpFailOvers
-	}
+	obj["can_manage_ip_failovers"] = *v.CanManageIpFailOvers
+	obj["can_manage_network"] = *v.CanManageNetwork
 	obj["can_manage_rights"] = *v.CanManageRights
 	if v.Email != nil {
 		obj["email"] = *v.Email
@@ -211,25 +210,94 @@ func (v DedicatedCloudUser) ToMap() map[string]interface{} {
 
 type DedicatedCloudUserCreateOpts struct {
 	// CanAddResource *bool `json:"canAddRessource` // ... And no, this is not a typo >_>
-	// CanManageRights *bool `json:"canManageRights"`
+	CanManageRights bool `json:"canManageRights"`
 	// Email *string `json:"email"`
-	// EncryptionRight *bool `json:"encryptionRight"`
+	EncryptionRight bool `json:"encryptionRight"`
 	// ExpirationDate *string `json:"expirationDate"`
-	// FirstName *string `json:"firstName"`
-	// LastName *string `json:"lastName"`
-	Login string `json:"name"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Login     string `json:"name"`
 	// NetworkRole *string `json:"networkRole"`
 	// NsxRight *bool `json:"nsxRight"`
 	// Password *string `json:"password"`
 	// PhoneNumber *string `json:"phoneNumber"`
-	// ReceiveAlerts *bool `json:"receiveAlerts"`
+	ReceiveAlerts bool `json:"receiveAlerts"`
 	// Right *string `json:"right"`
-	// TokenValidator *bool `json:"tokenValidator"`
+	TokenValidator bool `json:"tokenValidator"`
 	// VmNetworkRole *string `json:"vmNetworkRole"`
 }
 
 func (opts *DedicatedCloudUserCreateOpts) FromResource(d *schema.ResourceData) *DedicatedCloudUserCreateOpts {
+	opts.CanManageRights = d.Get("can_manage_rights").(bool)
+	opts.EncryptionRight = d.Get("encryption_right").(bool)
+	opts.FirstName = d.Get("first_name").(string)
+	opts.LastName = d.Get("last_name").(string)
 	opts.Login = d.Get("login").(string)
+	opts.ReceiveAlerts = d.Get("receive_alerts").(bool)
+	opts.TokenValidator = d.Get("is_token_validator").(bool)
+
+	return opts
+}
+
+type DedicatedCloudUserUpdateOpts struct {
+	// CanManageIpFailOvers bool `json:"canManageIpFailOvers"`
+	// CanManageNetworks bool `json:"canManageNetwork"` // Still not understanding what sets that property at user creation
+	CanManageRights bool `json:"canManageRights"`
+	// Email                string `json:"email"`
+	EncryptionRight bool   `json:"encryptionRight"`
+	FirstName       string `json:"firstName"`
+	// FullAdminRo          bool   `json:"fullAdminRo"`
+	LastName string `json:"lastName"`
+	// NsxRight             bool   `json:"nsxRight"`
+	// PhoneNumber          string `json:"phoneNumber"`
+	ReceiveAlerts  bool `json:"receiveAlerts"`
+	TokenValidator bool `json:"tokenValidator"`
+}
+
+func (opts *DedicatedCloudUserUpdateOpts) FromResource(d *schema.ResourceData) *DedicatedCloudUserUpdateOpts {
+	var n interface{}
+
+	if d.HasChange("can_manage_rights") {
+		_, n = d.GetChange("can_manage_rights")
+		opts.CanManageRights = n.(bool)
+	} else {
+		opts.CanManageRights = d.Get("can_manage_rights").(bool)
+	}
+
+	if d.HasChange("encryption_right") {
+		_, n = d.GetChange("encryption_right")
+		opts.EncryptionRight = n.(bool)
+	} else {
+		opts.EncryptionRight = d.Get("encryption_right").(bool)
+	}
+
+	if d.HasChange("first_name") {
+		_, n = d.GetChange("first_name")
+		opts.FirstName = n.(string)
+	} else {
+		opts.FirstName = d.Get("first_name").(string)
+	}
+
+	if d.HasChange("is_token_validator") {
+		_, n = d.GetChange("is_token_validator")
+		opts.TokenValidator = n.(bool)
+	} else {
+		opts.TokenValidator = d.Get("is_token_validator").(bool)
+	}
+
+	if d.HasChange("last_name") {
+		_, n = d.GetChange("last_name")
+		opts.LastName = n.(string)
+	} else {
+		opts.LastName = d.Get("last_name").(string)
+	}
+
+	if d.HasChange("receive_alerts") {
+		_, n = d.GetChange("receive_alerts")
+		opts.ReceiveAlerts = n.(bool)
+	} else {
+		opts.ReceiveAlerts = d.Get("receive_alerts").(bool)
+	}
 
 	return opts
 }

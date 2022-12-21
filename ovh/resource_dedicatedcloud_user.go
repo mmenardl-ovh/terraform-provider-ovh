@@ -91,6 +91,11 @@ func resourceDedicatedCloudUser() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 			},
+			"last_updated": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"nsx_right": {
 				Type:        schema.TypeBool,
 				Description: "Is this User able to access nsx interface (requires NSX option)",
@@ -129,6 +134,12 @@ func resourceDedicatedCloudUser() *schema.Resource {
 				Description: "Federation Active Directory user type (if any)",
 				Computed:    true,
 			},
+			"can_manage_network": {
+				Type:        schema.TypeBool,
+				Description: "Defines if the user can manage the network",
+				ForceNew:    false,
+				Computed:    true,
+			},
 			"is_enable_manageable": {
 				Type:        schema.TypeBool,
 				Description: "Check if the given Dedicated Cloud user can be enabled or disabled ?",
@@ -156,7 +167,7 @@ func resourceDedicatedCloudUserCreate(ctx context.Context, d *schema.ResourceDat
 	opts := (&DedicatedCloudUserCreateOpts{}).FromResource(d)
 	task := &DedicatedCloudTask{}
 
-	log.Printf("[DEBUG][Create] DedicatedCloudTask (for user)")
+	log.Printf("[DEBUG][Create] DedicatedCloudTask addUser for %s/%s", serviceName, userLogin)
 	endpoint := fmt.Sprintf("/dedicatedCloud/%s/user", url.PathEscape(serviceName))
 	if err := config.OVHClient.Post(endpoint, opts, &task); err != nil {
 		return diag.FromErr(err)
@@ -197,9 +208,29 @@ func resourceDedicatedCloudUserRead(ctx context.Context, d *schema.ResourceData,
 }
 
 func resourceDedicatedCloudUserUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
+	config := meta.(*Config)
+	serviceName := d.Get("service_name").(string)
+	userId := d.Get("user_id").(int)
 
-	return diags
+	// var diags diag.Diagnostics
+	optionalAttributes := []string{"can_manage_rights", "encryption_right", "first_name", "is_token_validator", "last_name", "receive_alerts"}
+	if d.HasChanges(optionalAttributes...) {
+		opts := (&DedicatedCloudUserUpdateOpts{}).FromResource(d)
+		task := &DedicatedCloudTask{}
+
+		endpoint := fmt.Sprintf("/dedicatedCloud/%s/user/%d/changeProperties", serviceName, userId)
+		if err := config.OVHClient.Post(endpoint, opts, &task); err != nil {
+			return diag.FromErr(err)
+		}
+
+		if err := waitForDedicatedCloudTask(10*time.Minute, serviceName, task, config.OVHClient); err != nil {
+			return diag.FromErr(err)
+		}
+
+		d.Set("last_updated", time.Now().Format(time.RFC3339))
+	}
+
+	return resourceDedicatedCloudUserRead(ctx, d, meta)
 }
 
 func resourceDedicatedCloudUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
